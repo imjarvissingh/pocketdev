@@ -1,6 +1,6 @@
 # PocketDev
 
-**Status: Engineering specification (planning only), not implemented.**
+**Status: Local browser prototype through Sprint 3; not deployed or production-ready.**
 
 PocketDev is a mobile-first, GitHub-connected development workspace for developers who only have a smartphone. Projects can have customizable role-based AI workers, scoped coding tasks, reviewable changes, and controlled GitHub branch/PR delivery. Optional PocketCoder Nano on-device inference is a separate experiment.
 

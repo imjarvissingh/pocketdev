@@ -11,6 +11,8 @@ D006 No production arbitrary code execution before sandbox isolation review.
 D007 No assumption of free unlimited inference, CI or storage.
 D008 ₹0 additional prototype spend target, not guaranteed operational cost.
 D009 User owns source, can edit without AI, and sees real execution evidence.
+D010 Keep the browser prototype's GitHub access public and read-only; use deterministic Playwright API mocks for end-to-end tests until a reviewed server-side GitHub App exists.
+D011 Treat unsaved editor text as user data: guard file, repository, project, section and page changes, and show original and modified source before export.
 
 ## Open decisions / unknowns
 U001 Exact hosting and auth provider.

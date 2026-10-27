@@ -1,7 +1,7 @@
-# Development runbook (planning-stage)
+# Development runbook
 
 ## Current verified state
-Public repository created by project owner and engineering documentation populated. No functioning app, model, backend, OAuth integration or build pipeline is implied by files here.
+As of 2026-10-28, the local React/TypeScript/Vite prototype supports browser-local projects and workers, public read-only GitHub browsing at a pinned revision, local source drafts, and patch export. The local end-to-end user flow has six passing Playwright Chromium tests; see `docs/OVERNIGHT_ENGINEERING_REPORT.md` for commands and limits. This is not deployed or production-ready. There is no AI inference, backend, OAuth integration, private-repository access, or GitHub write path.
 
 ## Tool allocation (suggested)
 Claude Code: architectural changes and integration review.

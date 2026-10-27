@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Sprint 0 frontend artifacts
+node_modules/
+dist/
+.vite/

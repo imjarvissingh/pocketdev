@@ -3,7 +3,7 @@ import { fetchPublicFile, fetchPublicTree, parsePublicRepo, type GitEntry, type 
 import { downloadPatch, getLocalDraft, removeLocalDraft, saveLocalDraft, type DraftKey } from './drafts';
 import { checkDraftPatch } from './verification';
 
-export default function GitHubPreview() {
+export default function GitHubPreview({ onUnsavedChange }: { onUnsavedChange: (unsaved: boolean) => void }) {
   const [repoInput, setRepoInput] = useState('imjarvissingh/pocketdev');
   const [snapshot, setSnapshot] = useState<RepoSnapshot | null>(null);
   const [selected, setSelected] = useState<GitEntry | null>(null);
@@ -19,11 +19,12 @@ export default function GitHubPreview() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('');
   const [requestId, setRequestId] = useState(0);
+  const [unsaved, setUnsaved] = useState(false);
   const files = useMemo(() => snapshot?.entries.filter(e => e.type === 'blob' && e.path.toLowerCase().includes(filter.toLowerCase())).slice(0, 150) ?? [], [snapshot, filter]);
   useEffect(() => {
     if (!requestId) return;
     const controller = new AbortController();
-    setLoading(true); setSnapshot(null); setSelected(null); setContents(''); setDraft(''); setDraftNotice(''); setError('');
+    setLoading(true); setSnapshot(null); setSelected(null); setContents(''); setDraft(''); setUnsaved(false); onUnsavedChange(false); setDraftNotice(''); setError('');
     let repo;
     try { repo = parsePublicRepo(repoInput); }
     catch(e) { setError(e instanceof Error ? e.message : 'Invalid repository'); setLoading(false); return; }
@@ -42,25 +43,30 @@ export default function GitHubPreview() {
       setFileLoaded(true); setContents(source);
       const key: DraftKey = { ...snapshot.repo, commitSha: snapshot.commitSha, path: selected.path, blobSha: selected.sha };
       const saved = getLocalDraft(key, localStorage);
-      setDraft(saved ?? source);
+      setDraft(saved ?? source); setUnsaved(false); onUnsavedChange(false);
       if (saved !== null) setDraftNotice('Saved local draft restored for this exact commit.');
     }).catch(e => {
       if (!controller.signal.aborted) setError(e instanceof Error ? e.message : 'File request failed');
     }).finally(() => { if (!controller.signal.aborted) setFileLoading(false); });
     return () => controller.abort();
   }, [snapshot,selected]);
-  function load(e: FormEvent) { e.preventDefault(); setRequestId(n => n+1); }
+  function load(e: FormEvent) { e.preventDefault(); if (unsaved && !window.confirm('Discard your unsaved code changes? Save the draft first to keep them.')) return; setUnsaved(false); onUnsavedChange(false); setRequestId(n => n+1); }
+  function selectFile(file: GitEntry) {
+    if (selected?.path === file.path && selected.sha === file.sha) return;
+    if (unsaved && !window.confirm('Discard your unsaved code changes? Save the draft first to keep them.')) return;
+    setUnsaved(false); onUnsavedChange(false); setSelected(file);
+  }
   function currentKey(): DraftKey | null {
     return snapshot && selected ? { ...snapshot.repo, commitSha: snapshot.commitSha, path: selected.path, blobSha: selected.sha } : null;
   }
   function saveDraft() {
     const key = currentKey(); if (!key) return;
-    try { saveLocalDraft(key, draft, localStorage); setDraftError(''); setDraftNotice('Saved only in this browser. Not uploaded or committed.'); }
+    try { saveLocalDraft(key, draft, localStorage); setUnsaved(false); onUnsavedChange(false); setDraftError(''); setDraftNotice('Saved only in this browser. Not uploaded or committed.'); }
     catch(e) { setDraftError(e instanceof Error ? e.message : 'Could not save draft'); }
   }
   function discardDraft() {
     const key = currentKey(); if (!key) return;
-    removeLocalDraft(key, localStorage); setDraft(contents); setDraftError(''); setDraftNotice('Local draft discarded.');
+    removeLocalDraft(key, localStorage); setDraft(contents); setUnsaved(false); onUnsavedChange(false); setDraftError(''); setDraftNotice('Local draft discarded.');
   }
   async function exportPatch() {
     const key = currentKey(); if (!key || checking) return;
@@ -83,13 +89,13 @@ export default function GitHubPreview() {
       <button className="primary" type="submit" disabled={loading}>{loading?'Loading…':'Load repository'}</button>
     </form>
     {error && <p className="error" role="alert">{error}</p>}
-    {snapshot && <div className="repo-result">
+      {snapshot && <div className="repo-result">
       <div className="repo-meta"><strong>{snapshot.repo.owner}/{snapshot.repo.repo}</strong><span>Public · Read only</span></div>
       <p className="support">Pinned commit: <code>{snapshot.commitSha.slice(0,12)}</code> · {snapshot.entries.length} entries{snapshot.truncated?' · Truncated tree':''}</p>
       {snapshot.truncated && <p className="warning">This repository tree was truncated. Some files may be missing.</p>}
       <label className="repo-search">Filter files <input placeholder="Search filenames" value={filter} onChange={e=>setFilter(e.target.value)}/></label>
-      <div className="repo-files" aria-label="Public repository files">{files.map(f=><button key={f.path} className={'repo-file '+(selected?.sha===f.sha?'chosen':'')} onClick={()=>setSelected(f)}>▤ <span>{f.path}</span><small>{typeof f.size==='number'?Math.round(f.size/1024)+' KB':''}</small></button>)}</div>
-      {selected && <div className="repo-source"><div className="repo-source-header"><strong>{selected.path}</strong><span>PINNED · {selected.sha.slice(0,9)}</span></div>{fileLoading?<p className="support">Loading file…</p>:!fileLoaded?<p className="support">File not available for editing. Select another supported text file.</p>:<div className="draft-workspace"><p className="support">Local draft editor · changes stay on this device. Do not enter secrets or confidential code.</p><label htmlFor="draft-editor" className="repo-search">Edit draft (plain text)</label><textarea id="draft-editor" aria-label="Local code draft" spellCheck={false} value={draft} onChange={e=>{setDraft(e.target.value);setDraftNotice('');setVerification('');}} rows={13}/><p className="draft-status">{draft===contents?'Unchanged from pinned Git blob':'Unsaved changes relative to pinned Git blob'} · SHA {snapshot.commitSha.slice(0,12)}</p>{draftError && <p className="error" role="alert">{draftError}</p>}{draftNotice && <p className="support" role="status">{draftNotice}</p>}{verification && <p className="support" role="status">{verification}</p>}<div className="draft-actions"><button className="secondary" type="button" onClick={saveDraft}>Save local draft</button><button className="secondary" type="button" onClick={discardDraft}>Discard draft</button><button className="primary" type="button" disabled={draft===contents || checking} onClick={exportPatch}>{checking?'Checking…':'Verify source & export .patch'}</button></div><details><summary>View original read-only file</summary><pre tabIndex={0}><code>{contents || '(empty file)'}</code></pre></details><p className="preview-note">Exported patches are unverified and are never applied to GitHub automatically.</p></div>}</div>}
+      <div className="repo-files" aria-label="Public repository files">{files.map(f=><button key={f.path} type="button" className={'repo-file '+(selected?.sha===f.sha?'chosen':'')} onClick={()=>selectFile(f)}>▤ <span>{f.path}</span><small>{typeof f.size==='number'?Math.round(f.size/1024)+' KB':''}</small></button>)}</div>
+      {selected && <div className="repo-source"><div className="repo-source-header"><strong>{selected.path}</strong><span>PINNED · {selected.sha.slice(0,9)}</span></div>{fileLoading?<p className="support">Loading file…</p>:!fileLoaded?<p className="support">File not available for editing. Select another supported text file.</p>:<div className="draft-workspace"><p className="support">Local draft editor · changes stay on this device. Do not enter secrets or confidential code.</p><label htmlFor="draft-editor" className="repo-search">Edit draft (plain text)</label><textarea id="draft-editor" aria-label="Local code draft" spellCheck={false} value={draft} onChange={e=>{const value=e.target.value;setDraft(value);const changed=value!==contents;setUnsaved(changed);onUnsavedChange(changed);setDraftNotice('');setVerification('');}} rows={13}/><p className="draft-status">{draft===contents?'Unchanged from pinned Git blob':unsaved?'Unsaved changes · Save to keep this draft':'Saved draft differs from pinned Git blob'} · SHA {snapshot.commitSha.slice(0,12)}</p>{draftError && <p className="error" role="alert">{draftError}</p>}{draftNotice && <p className="support" role="status">{draftNotice}</p>}{verification && <p className="support" role="status">{verification}</p>}<div className="draft-actions"><button className="secondary" type="button" onClick={saveDraft}>Save local draft</button><button className="secondary" type="button" onClick={discardDraft}>Discard draft</button><button className="primary" type="button" disabled={draft===contents || checking} onClick={exportPatch}>{checking?'Checking…':'Verify source & export .patch'}</button></div><details className="diff-review"><summary>Review original and modified</summary><div className="diff-panes"><section><h4>Original · pinned source</h4><pre tabIndex={0} aria-label="Original pinned source"><code>{contents || '(empty file)'}</code></pre></section><section><h4>Modified · local draft</h4><pre tabIndex={0} aria-label="Modified local draft"><code>{draft || '(empty file)'}</code></pre></section></div></details><p className="preview-note">Source checksum verifies only the original bytes. Patch applicability, code tests, GitHub authorization, and merge approval are not verified here.</p></div>}</div>}
     </div>}
     <p className="preview-note">This is not GitHub sign-in. Private repositories, authorized commits and PRs require a reviewed backend. Drafts are stored in browser localStorage; clearing browser data deletes them. Exported patches are not validation or approval.</p>
   </div>;

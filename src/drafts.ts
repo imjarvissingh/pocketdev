@@ -26,8 +26,9 @@ export function removeLocalDraft(key: DraftKey, storage: Pick<Storage, 'removeIt
 
 /** Basic unified patch. Whole-file hunk is intentional for this small-file prototype. */
 export function exportUnifiedPatch(path: string, original: string, updated: string): string {
-  if (!path || path.startsWith('/') || path.split('/').some(s => s === '.' || s === '..' || !s)
-    || /[\r\n\t]/.test(path)) throw new Error('Invalid repository file path.');
+  if (!path || path.startsWith('/') || /^[a-zA-Z]:/.test(path) || path.includes('\\')
+    || path.split('/').some(s => s === '.' || s === '..' || !s)
+    || /[\u0000-\u001f\u007f]/.test(path)) throw new Error('Invalid repository file path.');
   if (original === updated) throw new Error('There are no changes to export.');
   if (utf8Bytes(original) > MAX_DRAFT_BYTES || utf8Bytes(updated) > MAX_DRAFT_BYTES) throw new Error('File exceeds the 100 KB patch limit.');
   const split = (s: string) => s.length === 0 ? [] : (s.endsWith('\n') ? s.slice(0, -1) : s).split('\n');

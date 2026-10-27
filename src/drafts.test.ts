@@ -36,5 +36,8 @@ describe('unified diff export', () => {
     expect(()=>exportUnifiedPatch('src/a.txt','a','a')).toThrow('no changes');
     expect(()=>exportUnifiedPatch('../secret','a','b')).toThrow('Invalid');
     expect(()=>exportUnifiedPatch('/etc/passwd','a','b')).toThrow('Invalid');
+    expect(()=>exportUnifiedPatch('..\\secret','a','b')).toThrow('Invalid');
+    expect(()=>exportUnifiedPatch('C:/Windows/file','a','b')).toThrow('Invalid');
+    expect(()=>exportUnifiedPatch('src/\u0000file','a','b')).toThrow('Invalid');
   });
 });

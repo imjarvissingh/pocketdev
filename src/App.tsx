@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { emptyWorkspace, loadWorkspace, makeMockTask, newId, roles, saveWorkspace, type Role, type Workspace } from './model';
+import GitHubPreview from './GitHubPreview';
 
 type Tab = 'Projects' | 'Workers' | 'Tasks' | 'Code';
 const nav: Tab[] = ['Projects', 'Workers', 'Tasks', 'Code'];
@@ -91,7 +92,7 @@ export default function App() {
           {projectTasks.length===0 ? <p className="empty-hint">No demonstration tasks yet.</p> : <div className="stack">{projectTasks.map(t=><article className="task-card" key={t.id}><div className="task-head"><strong>{t.request}</strong><span className="mock-badge">SIMULATED</span></div><small>{fmt(t.createdAt)} · Demo completed</small><ol>{t.steps.map((s,i)=><li key={i}>{s}</li>)}</ol></article>)}</div>}
         </>}
       </section>}
-      {tab==='Code' && <section className="panel"><h3>Repository workspace</h3><div className="empty-code"><span className="big-icon">⌁</span><h4>GitHub integration is next</h4><p>No repositories are connected and no source files have been fetched. This screen is intentionally a placeholder, not a functional editor.</p><span className="mock-badge">NOT IMPLEMENTED</span></div></section>}
+      {tab==='Code' && <section className="panel"><GitHubPreview /></section>}
     </main>
     <footer><span>POCKETDEV • SPRINT 0</span><span>Local prototype · No cloud costs</span></footer>
   </div>;

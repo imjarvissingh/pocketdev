@@ -24,22 +24,45 @@ export function removeLocalDraft(key: DraftKey, storage: Pick<Storage, 'removeIt
   storage.removeItem(draftStorageKey(key));
 }
 
-/** Basic unified patch. Whole-file hunk is intentional for this small-file prototype. */
+/** Small-file unified patch with up to three context lines around the changed region. */
 export function exportUnifiedPatch(path: string, original: string, updated: string): string {
   if (!path || path.startsWith('/') || /^[a-zA-Z]:/.test(path) || path.includes('\\')
     || path.split('/').some(s => s === '.' || s === '..' || !s)
     || /[\u0000-\u001f\u007f]/.test(path)) throw new Error('Invalid repository file path.');
   if (original === updated) throw new Error('There are no changes to export.');
   if (utf8Bytes(original) > MAX_DRAFT_BYTES || utf8Bytes(updated) > MAX_DRAFT_BYTES) throw new Error('File exceeds the 100 KB patch limit.');
-  const split = (s: string) => s.length === 0 ? [] : (s.endsWith('\n') ? s.slice(0, -1) : s).split('\n');
+  const split = (text: string) => {
+    if (!text) return [];
+    const lines = text.split('\n');
+    if (text.endsWith('\n')) lines.pop();
+    return lines.map((value, index) => ({ value, terminated: index < lines.length - 1 || text.endsWith('\n') }));
+  };
   const oldLines = split(original), newLines = split(updated);
-  const lineBlock = (lines: string[], symbol: string, terminated: boolean) =>
-    lines.map((line, i) => symbol + line + '\n' + (i === lines.length - 1 && !terminated ? '\\ No newline at end of file\n' : '')).join('');
-  const hunk = '@@ -' + (oldLines.length ? '1,' + oldLines.length : '0,0') + ' +' +
-    (newLines.length ? '1,' + newLines.length : '0,0') + ' @@\n';
-  return '--- a/' + path + '\n+++ b/' + path + '\n' + hunk +
-    lineBlock(oldLines, '-', original.endsWith('\n')) +
-    lineBlock(newLines, '+', updated.endsWith('\n'));
+  const same = (a: typeof oldLines[number], b: typeof newLines[number]) =>
+    a.value === b.value && a.terminated === b.terminated;
+  let prefix = 0;
+  while (prefix < oldLines.length && prefix < newLines.length && same(oldLines[prefix]!, newLines[prefix]!)) prefix++;
+  let suffix = 0;
+  while (suffix < oldLines.length - prefix && suffix < newLines.length - prefix
+    && same(oldLines[oldLines.length - suffix - 1]!, newLines[newLines.length - suffix - 1]!)) suffix++;
+
+  const context = 3;
+  const start = Math.max(0, prefix - context);
+  const oldEnd = oldLines.length - suffix;
+  const newEnd = newLines.length - suffix;
+  const after = Math.min(context, suffix);
+  const oldBlock = oldLines.slice(start, oldEnd + after);
+  const newBlock = newLines.slice(start, newEnd + after);
+  const range = (line: number, count: number) => `${count ? line + 1 : line},${count}`;
+  const render = (lines: typeof oldLines, symbol: string) => lines.map(line =>
+    symbol + line.value + '\n' + (line.terminated ? '' : '\\ No newline at end of file\n')).join('');
+  const hunk = `@@ -${range(start, oldBlock.length)} +${range(start, newBlock.length)} @@\n`;
+  // shortcut: separated edits share one hunk, split hunks if distant changes make patches too large.
+  return '--- a/' + path + '\n+++ b/' + path + '\n' + hunk
+    + render(oldLines.slice(start, prefix), ' ')
+    + render(oldLines.slice(prefix, oldEnd), '-')
+    + render(newLines.slice(prefix, newEnd), '+')
+    + render(oldLines.slice(oldEnd, oldEnd + after), ' ');
 }
 export function downloadPatch(path: string, patch: string): void {
   const blob = new Blob([patch], { type: 'text/x-diff;charset=utf-8' });

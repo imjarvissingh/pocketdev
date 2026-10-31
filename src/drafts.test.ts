@@ -32,6 +32,12 @@ describe('unified diff export', () => {
     expect(patch).toContain('@@ -0,0 +1,1 @@');
     expect(patch).toContain('\\ No newline at end of file');
   });
+  it('limits the hunk to three context lines and notices final-newline changes', () => {
+    const patch = exportUnifiedPatch('a.txt', 'one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\n', 'one\ntwo\nthree\nfour\nFIVE\nsix\nseven\neight\n');
+    expect(patch).toContain('@@ -2,7 +2,7 @@');
+    expect(patch).not.toContain(' one\n');
+    expect(exportUnifiedPatch('a.txt', 'same', 'same\n')).toContain('\\ No newline at end of file');
+  });
   it('refuses unchanged content and unsafe paths', () => {
     expect(()=>exportUnifiedPatch('src/a.txt','a','a')).toThrow('no changes');
     expect(()=>exportUnifiedPatch('../secret','a','b')).toThrow('Invalid');

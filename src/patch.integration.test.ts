@@ -37,4 +37,14 @@ describe('actual git apply integration (isolated fixture only)', () => {
     execFileSync('git', ['apply', patchFile], { cwd: dir });
     expect(readFileSync(join(dir, 'demo.txt'), 'utf8')).toBe('after');
   }));
+  it('checks and applies a CRLF patch containing Unicode without changing line endings', () => withTempDir(dir => {
+    const original = 'const label = "café";\r\nkeep this line\r\n';
+    const updated = 'const label = "🌍";\r\nkeep this line\r\n';
+    writeFileSync(join(dir, 'demo.ts'), original);
+    const patchFile = join(dir, 'demo.patch');
+    writeFileSync(patchFile, exportUnifiedPatch('demo.ts', original, updated));
+    execFileSync('git', ['apply', '--check', patchFile], { cwd: dir });
+    execFileSync('git', ['apply', patchFile], { cwd: dir });
+    expect(readFileSync(join(dir, 'demo.ts'), 'utf8')).toBe(updated);
+  }));
 });

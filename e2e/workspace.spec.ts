@@ -69,6 +69,11 @@ test('pinned source draft saves, restores, discards and exports while guarding u
   await mockRepository(page);
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto('/');
+  await page.getByLabel('Project name').fill('Draft Alpha');
+  await page.getByRole('button', { name: /Create project/ }).click();
+  await page.getByRole('button', { name: 'Projects', exact: true }).click();
+  await page.getByLabel('Project name').fill('Draft Beta');
+  await page.getByRole('button', { name: /Create project/ }).click();
   await openCode(page);
   await expect(page.getByText(`Pinned commit: ${commit.slice(0, 12)}`)).toBeVisible();
   await page.getByRole('button', { name: /src\/main.ts/ }).click();
@@ -89,6 +94,10 @@ test('pinned source draft saves, restores, discards and exports while guarding u
   await page.getByRole('button', { name: 'Discard draft' }).click();
   await expect(editor).toHaveValue(source);
   await editor.fill('const greeting = "patch me";\n');
+  page.once('dialog', dialog => dialog.dismiss());
+  await page.getByLabel('Active project').selectOption({ label: 'Draft Beta' });
+  await expect(page.getByLabel('Active project').locator('option:checked')).toHaveText('Draft Alpha');
+  await expect(editor).toHaveValue('const greeting = "patch me";\n');
   await page.getByRole('button', { name: 'Code', exact: true }).click();
   await expect(page.getByText(/Unsaved changes/)).toBeVisible();
   page.once('dialog', dialog => dialog.dismiss());
@@ -135,9 +144,13 @@ test('GitHub server failures are surfaced to the user', async ({ page }) => {
 for (const width of [360, 390]) {
   test(`mobile project controls remain visible without horizontal overflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await expect(page.getByRole('button', { name: /Create project/ })).toBeVisible();
+    await expect(page.getByLabel('Project name')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Projects', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Projects', exact: true })).toHaveAttribute('aria-current', 'page');
+    expect(await page.getByRole('button', { name: 'Projects', exact: true }).evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.keyboard.press('Tab');
     await expect(page.locator(':focus')).toBeVisible();

@@ -1,8 +1,8 @@
 # PocketDev
 
-**Status: Engineering specification (planning only), not implemented.**
+**Status: Local browser prototype with Sprint 4 CI and security-contract foundation; not deployed or production-ready.**
 
-PocketDev is a mobile-first, GitHub-connected development workspace for developers who only have a smartphone. Projects can have customizable role-based AI workers, scoped coding tasks, reviewable changes, and controlled GitHub branch/PR delivery. Optional PocketCoder Nano on-device inference is a separate experiment.
+PocketDev is a mobile-first, GitHub-connected development workspace for developers who only have a smartphone. The prototype supports projects, explicitly simulated role-based workers, scoped coding tasks, and reviewable local changes. Authenticated GitHub branch/PR delivery and PocketCoder Nano on-device inference remain future work.
 
 ## Start here
 - [AGENTS.md](AGENTS.md) — binding rules for coding assistants
@@ -12,6 +12,7 @@ PocketDev is a mobile-first, GitHub-connected development workspace for develope
 - [GitHub integration contract](docs/03-GITHUB-INTEGRATION.md)
 - [Security and trust model](docs/04-SECURITY.md)
 - [Acceptance and go/no-go tests](docs/08-ACCEPTANCE-TESTS.md)
+- [Sprint 4 engineering report](docs/SPRINT-4-ENGINEERING-REPORT.md)
 
 ## Non-negotiable rules
 No silent writes to main; no model-issued permission grants; never claim tests passed unless executed; no assumption small local models equal frontier models; no unrestricted remote code execution; no unlimited free AI or compute; no subscription logins or Colab used as production inference backends.

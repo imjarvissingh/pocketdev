@@ -223,3 +223,5 @@ __marimo__/
 node_modules/
 dist/
 .vite/
+playwright-report/
+test-results/

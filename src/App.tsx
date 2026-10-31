@@ -21,10 +21,21 @@ export default function App() {
   const [taskText, setTaskText] = useState('');
   const [taskWorker, setTaskWorker] = useState('');
   const [error, setError] = useState('');
+  const [unsavedDraft, setUnsavedDraft] = useState(false);
   const selected = data.projects.find(p => p.id === active) ?? data.projects[0];
   const projectWorkers = useMemo(() => data.workers.filter(w => w.projectId === selected?.id), [data.workers, selected?.id]);
   const projectTasks = useMemo(() => data.tasks.filter(t => t.projectId === selected?.id), [data.tasks, selected?.id]);
   useEffect(() => { saveWorkspace(data); }, [data]);
+  useEffect(() => {
+    if (!unsavedDraft) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [unsavedDraft]);
+
+  function confirmLeaveDraft() {
+    return !unsavedDraft || window.confirm('Discard your unsaved code changes? Save the draft first to keep them.');
+  }
 
   function createProject(e: FormEvent) {
     e.preventDefault(); const name = projectName.trim();
@@ -67,9 +78,9 @@ export default function App() {
     <main>
       <div className="workspace-heading">
         <div><span className="eyebrow">YOUR WORKSPACE</span><h2>{selected ? selected.name : 'Get started'}</h2><p>{selected?.summary || (selected ? 'Local-only project · Not connected to GitHub' : 'Your first project starts here.')}</p></div>
-        {data.projects.length > 0 && <label className="switcher">Project<select aria-label="Active project" value={selected?.id} onChange={e => { setActive(e.target.value); setError(''); }} >{data.projects.map(p => <option value={p.id} key={p.id}>{p.name}</option>)}</select></label>}
+      {data.projects.length > 0 && <label className="switcher">Project<select aria-label="Active project" value={selected?.id} onChange={e => { if (!confirmLeaveDraft()) return; setUnsavedDraft(false); setActive(e.target.value); setError(''); }} >{data.projects.map(p => <option value={p.id} key={p.id}>{p.name}</option>)}</select></label>}
       </div>
-      <nav className="nav-tabs" aria-label="Workspace sections">{nav.map(n => <button key={n} type="button" className={tab===n?'active':''} onClick={() => {setTab(n); setError('')}} aria-current={tab===n?'page':undefined}>{n}</button>)}</nav>
+      <nav className="nav-tabs" aria-label="Workspace sections">{nav.map(n => <button key={n} type="button" className={tab===n?'active':''} onClick={() => { if (tab===n) return; if (!confirmLeaveDraft()) return; setUnsavedDraft(false); setTab(n); setError(''); }} aria-current={tab===n?'page':undefined}>{n}</button>)}</nav>
       {error && <p className="error" role="alert">{error}</p>}
       {tab==='Projects' && <section className="panel">
         <h3>Create a project</h3><p className="support">Projects are saved only in this browser. GitHub connectivity is planned for a later sprint.</p>
@@ -92,7 +103,7 @@ export default function App() {
           {projectTasks.length===0 ? <p className="empty-hint">No demonstration tasks yet.</p> : <div className="stack">{projectTasks.map(t=><article className="task-card" key={t.id}><div className="task-head"><strong>{t.request}</strong><span className="mock-badge">SIMULATED</span></div><small>{fmt(t.createdAt)} · Demo completed</small><ol>{t.steps.map((s,i)=><li key={i}>{s}</li>)}</ol></article>)}</div>}
         </>}
       </section>}
-      {tab==='Code' && <section className="panel"><GitHubPreview /></section>}
+      {tab==='Code' && <section className="panel"><GitHubPreview onUnsavedChange={setUnsavedDraft} /></section>}
     </main>
     <footer><span>POCKETDEV • SPRINT 0</span><span>Local prototype · No cloud costs</span></footer>
   </div>;

@@ -13,6 +13,7 @@ D008 ₹0 additional prototype spend target, not guaranteed operational cost.
 D009 User owns source, can edit without AI, and sees real execution evidence.
 D010 Keep the browser prototype's GitHub access public and read-only; use deterministic Playwright API mocks for end-to-end tests until a reviewed server-side GitHub App exists.
 D011 Treat unsaved editor text as user data: guard file, repository, project, section and page changes, and show original and modified source before export.
+D012 Sprint 4 adds server-only, pure GitHub authorization contracts and deny-by-default validators. It does not create an OAuth route, persistent session/grant store, GitHub App adapter implementation, or remote-write path. Any future backend must provide authoritative grant/path data and atomic one-time state/approval/idempotency claims before calling GitHub. Owner: PocketDev; date: 2026-10-31; source: `server/github-security.ts` and its tests; status: contracts locally verified; next test: threat-model review and integration tests against a chosen backend/store before any credentials or live integration.
 
 ## Open decisions / unknowns
 U001 Exact hosting and auth provider.

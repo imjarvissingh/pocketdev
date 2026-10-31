@@ -41,6 +41,7 @@ These supplement, rather than supersede, canonical numbered docs above. Where co
 - [Risk register and unresolved questions](RISKS_AND_OPEN_QUESTIONS.md)
 - [Anti-hallucination evidence contract](EVIDENCE_AND_VERIFICATION.md)
 - [Development runbook](DEVELOPMENT_RUNBOOK.md)
+- [Sprint 4 engineering report and execution evidence](SPRINT-4-ENGINEERING-REPORT.md)
 - [Architecture decision record template](adr/0000-template.md)
 
 ## Document maintenance rule

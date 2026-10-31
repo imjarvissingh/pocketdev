@@ -1,7 +1,7 @@
 # Development runbook
 
 ## Current verified state
-As of 2026-10-28, the local React/TypeScript/Vite prototype supports browser-local projects and workers, public read-only GitHub browsing at a pinned revision, local source drafts, and patch export. The local end-to-end user flow has six passing Playwright Chromium tests; see `docs/OVERNIGHT_ENGINEERING_REPORT.md` for commands and limits. This is not deployed or production-ready. There is no AI inference, backend, OAuth integration, private-repository access, or GitHub write path.
+As of 2026-10-31, the local React/TypeScript/Vite prototype supports browser-local projects and workers, public read-only GitHub browsing at a pinned revision, local source drafts, patch export, and local patch verification. Node 24 is declared in `.nvmrc` and `package.json`; a read-only GitHub Actions CI workflow is locally syntax-checked but has not run on GitHub. See `docs/SPRINT-4-ENGINEERING-REPORT.md` for exact commands and limits. This is not deployed or production-ready. There is no AI inference, backend, OAuth integration, private-repository access, or GitHub write path.
 
 ## Tool allocation (suggested)
 Claude Code: architectural changes and integration review.
